@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Districts of India · VIIRS NTL &amp; Building Volume</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Merriweather:ital,wght@0,400;0,700;1,400&display=swap">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page">
+  <header class="hero">
+    <h1>Districts of <span class="accent">India</span></h1>
+    <p class="sub">
+      Annual building volume (Google Open Buildings 2.5D Temporal) and monthly
+      night-time lights (VIIRS DNB) for ~640 SHRUG / PC11 districts. Data is
+      computed in Google Earth Engine and cleaned with
+      <a href="https://github.com/xKDR/NighttimeLights.jl">NighttimeLights.jl</a>.
+    </p>
+  </header>
+
+  <main>
+    <section id="status-section">
+      <p id="status" class="status">Loading data…</p>
+    </section>
+
+    <section data-needs="bv ntl" hidden>
+      <h2>Choropleth <span class="year-tag" id="year-tag"></span></h2>
+      <div class="controls">
+        <label>Year <select data-control="year"></select></label>
+      </div>
+      <div class="row">
+        <div id="bv-map"  data-needs="bv"></div>
+        <div id="ntl-map" data-needs="ntl"></div>
+      </div>
+    </section>
+
+    <section data-needs="bv ntl" hidden>
+      <h2>Top districts</h2>
+      <div class="row">
+        <div id="bv-top"  data-needs="bv"></div>
+        <div id="ntl-top" data-needs="ntl"></div>
+      </div>
+    </section>
+
+    <section data-needs="ntl" hidden>
+      <h2>NTL trend by state</h2>
+      <div id="ntl-trend"></div>
+    </section>
+
+    <section data-needs="bv+ntl" hidden>
+      <h2>Building volume vs. NTL</h2>
+      <div id="scatter"></div>
+    </section>
+
+    <section id="downloads-section" hidden>
+      <h2>Downloads</h2>
+      <ul id="downloads"></ul>
+    </section>
+  </main>
+
+  <footer>
+    Built from Google Earth Engine. VIIRS:
+    <code>NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG</code>.
+    Buildings: <code>GOOGLE/Research/open-buildings-temporal/v1</code>.
+    VIIRS cleaning via
+    <a href="https://github.com/xKDR/NighttimeLights.jl">NighttimeLights.jl</a>
+    (Patnaik, Shah, Tayal, Thomas 2021).
+    District boundaries from
+    <a href="https://www.devdatalab.org/shrug">SHRUG</a>:
+    Asher, S., Lunt, T., Matsuura, R., &amp; Novosad, P. (2021).
+    “Development research at high geographic resolution: an analysis of
+    night-lights, firms, and poverty in India using the SHRUG open data
+    platform.” <i>The World Bank Economic Review</i>, 35(4).
+  </footer>
+</div>
+
+<script>
+  // Inline early so it can catch parse errors in the deferred scripts below.
+  window.addEventListener("error", e => {
+    const s = document.getElementById("status");
+    if (!s) return;
+    s.textContent = `JS error: ${e.message}` +
+                    (e.filename ? `  (${e.filename}:${e.lineno})` : "");
+    s.classList.add("error");
+  });
+</script>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
