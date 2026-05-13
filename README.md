@@ -5,35 +5,35 @@ District-level annual **building volume** and monthly **night-time lights** for
 
 | Layer | Source | How it's loaded | Frequency | Years |
 |---|---|---|---|---|
-| NTL | `NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG` | GEE per-district reduction | Monthly | 2014 → present |
+| NTL | NOAA VIIRS SL monthly TIFs | Local files via `NighttimeLights.readnl` | Monthly | 2014 → present |
 | Building volume | `GOOGLE/Research/open-buildings-temporal/v1` | GEE per-district reduction | Annual | 2016 → 2023 |
 | Boundaries | SHRUG PC11 districts | Local shapefile in `data/boundaries/` | — | 2011 vintage |
 
 ## Pipeline
 
 ```
-   ┌────────────────────────────┐    ┌──────────────────────────┐    ┌──────────────────┐
-   │  GEE (Python)              │    │  Julia                   │    │  Static dashboard│
-   │  • VIIRS:   yearly CSVs    │ →  │  • concat VIIRS years    │ →  │  HTML + JS       │
-   │  • Building: yearly CSVs   │    │  • merge into panel      │    │  + Plotly.js     │
-   │    (per-district reduce)   │    │                          │    │                  │
-   └────────────────────────────┘    └──────────────────────────┘    └──────────────────┘
+   ┌────────────────────────┐    ┌────────────────────────────────────┐    ┌──────────────────┐
+   │  Buildings:            │    │  Julia                             │    │  Static dashboard│
+   │  GEE → CSV per year    │ →  │  • per-district readnl()           │ →  │  HTML + JS       │
+   │                        │    │  • clean_complete (PSTT2021)       │    │  + Plotly.js     │
+   │  VIIRS:                │    │  • mask + sum → viirs_monthly.csv  │    │                  │
+   │  local SL TIFs         │    │  • merge → district_panel.csv      │    │                  │
+   └────────────────────────┘    └────────────────────────────────────┘    └──────────────────┘
 ```
 
-1. **VIIRS** — `gee/extract_viirs_monthly.py` queues one task per year that
-   reduces `avg_rad` to (district, month) sum/mean/count using the SHRUG
-   polygons. NOAA's VCMSLCFG product is already stray-light-corrected and
-   gap-filled, so we let that stand as the cleaning step. CSVs land in Drive
-   folder `Districts-Of-India-VIIRS`.
-2. **Buildings** — `gee/extract_building_volume.py` queues one task per year
-   computing `sum(building_height × pixel_area)` per district from
-   Open Buildings 2.5D Temporal. CSVs land in Drive folder
-   `Districts-Of-India-Buildings`.
-3. **Download** — `gee/download_from_drive.py` pulls both sets of CSVs into
-   `data/raw/`.
-4. **Julia** — `julia/clean_viirs.jl` concatenates per-year VIIRS CSVs into
-   one tidy panel; `julia/merge_panel.jl` rolls VIIRS monthly to annual and
-   joins with the buildings panel.
+1. **Buildings** — `gee/extract_building_volume.py` queues annual
+   `Export.table.toDrive` tasks computing `sum(building_height × pixel_area)`
+   per district. `gee/download_from_drive.py` pulls the CSVs into `data/raw/`.
+2. **VIIRS** — handled entirely locally. `julia/clean_viirs.jl` loops over
+   SHRUG districts (threaded); for each, `NighttimeLights.readnl` loads only
+   the bbox of that district from the local SL monthly TIFs, then
+   `clean_complete` (the PSTT2021 pipeline) cleans the time series before the
+   mask + sum. Default TIF paths: `/mnt/giant-disk/ntl/sl/{rad,cf}/` —
+   override with `DOI_RAD_PATH` / `DOI_CF_PATH` env vars. A small number of
+   districts trip a DiskArrays "sorted indices" error on `readnl`'s lazy
+   crop; those are caught, warned once, and skipped.
+3. **Merge** — `julia/merge_panel.jl` rolls VIIRS monthly to annual and joins
+   with the buildings panel.
 3. **[dashboard/build_dashboard.py](dashboard/build_dashboard.py)** — generates
    a single self-contained `docs/index.html` with Plotly.
 4. **[docs/](docs/)** — output directory served by GitHub Pages.
@@ -42,26 +42,22 @@ District-level annual **building volume** and monthly **night-time lights** for
 
 ```bash
 # 1. (one-time) upload SHRUG shapefile as a GEE asset — see gee/README.md
-# 2. authenticate GEE and queue both exports
+# 2. authenticate GEE and queue the building-volume export
 pip install earthengine-api
 earthengine authenticate
-make export-bv         # buildings 2016-2023, one task per year
-make export-viirs      # VIIRS monthly 2014-2025, one task per year
+make export-bv         # one task per year, 2016-2023
 
 # 3. download CSVs from Drive when the tasks finish:
 python3 gee/download_from_drive.py \
     --folder Districts-Of-India-Buildings --dest data/raw \
     --pattern 'buildings_.*\.csv'
-python3 gee/download_from_drive.py \
-    --folder Districts-Of-India-VIIRS --dest data/raw \
-    --pattern 'viirs_monthly_.*\.csv'
 
-# 4. (one-time) instantiate the Julia env
+# 4. (one-time) point Julia env at the local NighttimeLights.jl checkout
 make julia-deps
 
-# 5. shapefile → GeoJSONs, concat VIIRS years, merge panel
+# 5. shapefile → GeoJSONs, VIIRS clean, merge panel
 make boundaries        # writes data/clean/districts.geojson + districts_simplified.geojson
-make viirs             # concatenates data/raw/viirs_monthly_*.csv
+make viirs             # per-district readnl + clean_complete + mask + sum
 make panel             # joins VIIRS (annual) with building CSVs
 
 # 6. stage data files for the dashboard

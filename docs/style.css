@@ -167,6 +167,50 @@ section > div:not(.row):not(.controls):not(.year-tag) {
 
 /* ---------- downloads ---------- */
 
+/* ---------- district detail panel ---------- */
+
+.detail-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 4px 0 18px;
+  flex-wrap: wrap;
+}
+.detail-controls input[type="search"] {
+  flex: 1;
+  min-width: 240px;
+  max-width: 420px;
+  font: 15px/1.4 var(--font-sans);
+  padding: 10px 14px;
+  border: 1px solid var(--secondary);
+  background: var(--white);
+  color: var(--secondary);
+  border-radius: 0;
+  appearance: none;
+}
+.detail-controls input[type="search"]:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.detail-controls input[type="search"]::placeholder {
+  color: var(--muted);
+  font-style: italic;
+  font-family: var(--font-serif);
+}
+.detail-controls button {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 8px 14px;
+  background: var(--secondary);
+  color: var(--theme);
+  border: 0;
+  cursor: pointer;
+}
+.detail-controls button:hover { background: var(--primary); }
+
 #downloads {
   list-style: none;
   padding: 0;

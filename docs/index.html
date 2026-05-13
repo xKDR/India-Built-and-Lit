@@ -26,6 +26,23 @@
       <p id="status" class="status">Loading data…</p>
     </section>
 
+    <section id="detail" data-needs="bv ntl" hidden>
+      <h2>District detail
+        <span class="year-tag" id="detail-subtitle">Pick a district from the map or search</span>
+      </h2>
+      <div class="detail-controls">
+        <input type="search" id="district-search"
+               list="district-list" autocomplete="off"
+               placeholder="Search district…" />
+        <datalist id="district-list"></datalist>
+        <button type="button" id="detail-clear" hidden>Clear</button>
+      </div>
+      <div class="row" id="detail-charts" hidden>
+        <div id="detail-bv"  data-needs="bv"></div>
+        <div id="detail-ntl" data-needs="ntl"></div>
+      </div>
+    </section>
+
     <section data-needs="bv ntl" hidden>
       <h2>Choropleth <span class="year-tag" id="year-tag"></span></h2>
       <div class="controls">
@@ -45,9 +62,17 @@
       </div>
     </section>
 
-    <section data-needs="ntl" hidden>
-      <h2>NTL trend by state</h2>
-      <div id="ntl-trend"></div>
+    <section data-needs="bv ntl" hidden id="trend-section">
+      <h2>Trend by state <span class="year-tag" id="trend-subtitle"></span></h2>
+      <div class="controls">
+        <label>Metric
+          <select data-control="trend-metric">
+            <option value="ntl" data-needs="ntl">Monthly NTL (sum radiance)</option>
+            <option value="bv"  data-needs="bv">Annual building volume (m³)</option>
+          </select>
+        </label>
+      </div>
+      <div id="trend-chart"></div>
     </section>
 
     <section data-needs="bv+ntl" hidden>
