@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Districts of India · VIIRS NTL &amp; Building Volume</title>
+  <title>India · Built &amp; Lit — district panel of building volume + VIIRS NTL</title>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,12 +12,13 @@
 <body>
 <div class="page">
   <header class="hero">
-    <h1>Districts of <span class="accent">India</span></h1>
+    <h1>India <span class="dot">·</span> <span class="accent">Built &amp; Lit</span></h1>
     <p class="sub">
-      Annual building volume (Google Open Buildings 2.5D Temporal) and monthly
-      night-time lights (VIIRS DNB) for ~640 SHRUG / PC11 districts. Data is
-      computed in Google Earth Engine and cleaned with
-      <a href="https://github.com/xKDR/NighttimeLights.jl">NighttimeLights.jl</a>.
+      A district-level panel of <b>annual building volume</b>
+      (Google Open Buildings 2.5D Temporal) and <b>monthly night-time lights</b>
+      (VIIRS DNB) for ~640 SHRUG / PC11 districts. Building data is computed
+      server-side on Google Earth Engine; VIIRS is cleaned locally with
+      <a target="_blank" rel="noopener" href="https://github.com/xKDR/NighttimeLights.jl">NighttimeLights.jl</a>.
     </p>
   </header>
 
@@ -73,6 +74,7 @@
         </label>
       </div>
       <div id="trend-chart"></div>
+      <p class="tip">Click a state in the legend to isolate it · click another to add · click the sole visible state to restore all · double-click to reset.</p>
     </section>
 
     <section data-needs="bv+ntl" hidden>
@@ -87,18 +89,53 @@
   </main>
 
   <footer>
-    Built from Google Earth Engine. VIIRS:
-    <code>NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG</code>.
-    Buildings: <code>GOOGLE/Research/open-buildings-temporal/v1</code>.
-    VIIRS cleaning via
-    <a href="https://github.com/xKDR/NighttimeLights.jl">NighttimeLights.jl</a>
-    (Patnaik, Shah, Tayal, Thomas 2021).
-    District boundaries from
-    <a href="https://www.devdatalab.org/shrug">SHRUG</a>:
-    Asher, S., Lunt, T., Matsuura, R., &amp; Novosad, P. (2021).
-    “Development research at high geographic resolution: an analysis of
-    night-lights, firms, and poverty in India using the SHRUG open data
-    platform.” <i>The World Bank Economic Review</i>, 35(4).
+    <p>
+      Built from Google Earth Engine. VIIRS:
+      <code>NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG</code>.
+      Buildings: <code>GOOGLE/Research/open-buildings-temporal/v1</code>.
+      VIIRS cleaning via
+      <a target="_blank" rel="noopener" href="https://github.com/xKDR/NighttimeLights.jl">NighttimeLights.jl</a>.
+      District boundaries from
+      <a target="_blank" rel="noopener" href="https://www.devdatalab.org/shrug">SHRUG</a>
+      (Asher, Lunt, Matsuura &amp; Novosad, 2021,
+      <i>The World Bank Economic Review</i> 35(4)).
+    </p>
+
+    <p class="cite-head">Selected XKDR work using nighttime lights:</p>
+    <ul class="cites">
+      <li>
+        <a target="_blank" rel="noopener" href="https://www.xkdr.org/paper/but-clouds-got-in-my-way-bias-and-bias-correction-of-viirs-nighttime-lights-data-in-the-presence-of-clouds">
+          But clouds got in my way: bias and bias correction of VIIRS
+          nighttime lights data in the presence of clouds</a>
+        · XKDR Forum, Oct 2021 (PSTT2021 — the cleaning method this dashboard uses).
+      </li>
+      <li>
+        <a target="_blank" rel="noopener" href="https://www.xkdr.org/paper/foundations-for-nighttime-lights-data-analysis">
+          Foundations for nighttime lights data analysis</a>
+        · XKDR Forum, Dec 2022.
+      </li>
+      <li>
+        <a target="_blank" rel="noopener" href="https://www.xkdr.org/paper/exploring-economic-activity-from-outer-space-a-python-notebook-for-processing-and-analyzing-satellite-nighttime-lights">
+          Exploring economic activity from outer space: a Python notebook for
+          processing and analyzing satellite nighttime lights</a>
+        · XKDR Forum, Jun 2024.
+      </li>
+      <li>
+        <a target="_blank" rel="noopener" href="https://www.xkdr.org/paper/shedding-light-on-the-russia-ukraine-war">
+          Shedding light on the Russia-Ukraine war</a>
+        · XKDR Forum, Aug 2025.
+      </li>
+    </ul>
+
+    <p class="cite-head">Selected XKDR work using building volume / footprints:</p>
+    <ul class="cites">
+      <li>
+        <a target="_blank" rel="noopener" href="https://www.xkdr.org/paper/estimating-property-tax-potential-in-urban-local-bodies-using-satellite-imagery">
+          Estimating property tax potential in urban local bodies using
+          satellite imagery</a>
+        · XKDR Forum, Mar 2026.
+      </li>
+    </ul>
   </footer>
 </div>
 

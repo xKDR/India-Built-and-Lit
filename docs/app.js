@@ -351,6 +351,35 @@ function topN(divId, panel, metric, label, year, n = 20) {
   Plotly.newPlot(divId, [trace], L, PLOT_CFG);
 }
 
+// Custom legend interaction: click isolates / re-adds. Wired into stateTrend.
+//   - click on a visible series among many → hide the others (isolate)
+//   - click on a hidden series              → show it too (additive)
+//   - click on the sole visible series      → restore all
+// We let Plotly handle double-click ourselves so the default "show-all" works.
+function attachSmartLegend(divId) {
+  const el = document.getElementById(divId);
+  if (!el || !el.on) return;
+  const visible = t => t.visible !== "legendonly" && t.visible !== false;
+
+  el.on("plotly_legendclick", ev => {
+    const data = ev.data;
+    const i = ev.curveNumber;
+    const cur = data[i];
+    const nVisible = data.filter(visible).length;
+
+    if (visible(cur) && nVisible > 1) {
+      Plotly.restyle(el, { visible: data.map((_, j) => j === i ? true : "legendonly") });
+      return false;
+    }
+    if (visible(cur) && nVisible === 1) {
+      Plotly.restyle(el, { visible: data.map(_ => true) });
+      return false;
+    }
+    // Hidden series — let Plotly's default toggle add it back.
+    return true;
+  });
+}
+
 // Generic per-state trend renderer. The caller supplies a row source plus
 // which fields encode the x/y values, the labels, and how to format x in the
 // hover tooltip.
@@ -395,7 +424,7 @@ function stateTrend(divId, rows, opts) {
   // A palette anchored on the XKDR coral, with complementary muted hues.
   L.colorway = ["#f57d6a","#1a1a1a","#7a7a7a","#e0654f","#3a3a3a","#b9534a",
                 "#5c5c5c","#f5a48f","#262626","#9e3f2f","#878787","#c4c4c4"];
-  Plotly.newPlot(divId, traces, L, PLOT_CFG);
+  Plotly.newPlot(divId, traces, L, PLOT_CFG).then(() => attachSmartLegend(divId));
 }
 
 function ntlStateTrend(divId, monthly) {

@@ -1,7 +1,8 @@
-# Districts of India
+# India · Built & Lit
 
-District-level annual **building volume** and monthly **night-time lights** for
-~640 Indian districts, derived from Google Earth Engine.
+District-level annual **building volume** and monthly **night-time lights**
+for ~640 Indian districts. Buildings via Google Earth Engine; VIIRS NTL
+cleaned locally with [NighttimeLights.jl](https://github.com/xKDR/NighttimeLights.jl).
 
 | Layer | Source | How it's loaded | Frequency | Years |
 |---|---|---|---|---|
