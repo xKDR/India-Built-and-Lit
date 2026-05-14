@@ -75,6 +75,52 @@ header.hero p.sub {
 header.hero p.sub a { color: var(--primary); }
 header.hero p.sub a:hover { color: var(--primary-dark); text-decoration: underline; }
 
+/* ---------- primer ---------- */
+
+#primer .row { gap: 20px; }
+.primer-card {
+  background: var(--white);
+  border: 1px solid var(--line);
+  padding: 22px 24px;
+}
+.primer-card h3 {
+  margin: 0 0 12px;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: -0.005em;
+  color: var(--secondary);
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.primer-card h3 .flow,
+.primer-card h3 .stock {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 0;
+}
+.primer-card h3 .flow  { background: var(--primary); color: var(--white); }
+.primer-card h3 .stock { background: var(--secondary); color: var(--theme); }
+.primer-card p {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--fg);
+}
+.primer-foot {
+  margin: 14px 4px 0;
+  font-family: var(--font-serif);
+  font-size: 13px;
+  font-style: italic;
+  color: var(--muted);
+}
+
 /* ---------- status pill ---------- */
 
 .status {
@@ -284,6 +330,15 @@ footer .cite-head {
   text-transform: uppercase;
   font-size: 11px;
   letter-spacing: 0.06em;
+  color: var(--secondary);
+}
+footer .cite-self {
+  font-family: var(--font-serif);
+  font-size: 14px;
+  background: var(--white);
+  border-left: 3px solid var(--primary);
+  padding: 10px 14px;
+  margin: 6px 0 18px;
   color: var(--secondary);
 }
 footer .cites { padding-left: 18px; margin: 0; }

@@ -23,6 +23,35 @@
   </header>
 
   <main>
+    <section id="primer">
+      <div class="row">
+        <div class="primer-card">
+          <h3>Building volume <span class="stock">stock</span></h3>
+          <p>
+            Annual integral of building height over a district from the
+            Google Open Buildings 2.5D Temporal product — essentially
+            roof-area × mean height. It measures the accumulated built
+            environment: factories, housing, infrastructure. Best read as a
+            <b>stock</b> series: how much has been <i>built up to date</i>.
+          </p>
+        </div>
+        <div class="primer-card">
+          <h3>Night-time lights <span class="flow">flow</span></h3>
+          <p>
+            Monthly VIIRS DNB radiance summed across each district.
+            Brighter lights at night track <i>present</i> economic activity —
+            factories running, vehicles moving, homes lit. As activity
+            picks up or slumps, the NTL series moves with it. Best read as a
+            <b>flow</b> series: how much is happening <i>this month</i>.
+          </p>
+        </div>
+      </div>
+      <p class="primer-foot">
+        Together, the two series let you see how <i>activity</i> and
+        <i>capital</i> co-move across India's districts.
+      </p>
+    </section>
+
     <section id="status-section">
       <p id="status" class="status">Loading data…</p>
     </section>
@@ -89,6 +118,11 @@
   </main>
 
   <footer>
+    <p class="cite-head">Cite this dataset:</p>
+    <p class="cite-self">
+      XKDR Forum (2026). <i>NighttimeLights and Built up volume dataset</i>.
+    </p>
+
     <p>
       Built from Google Earth Engine. VIIRS:
       <code>NOAA/VIIRS/DNB/MONTHLY_V1/VCMSLCFG</code>.

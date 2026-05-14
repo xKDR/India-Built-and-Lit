@@ -237,7 +237,7 @@ function renderDetail(d) {
       xaxis: Object.assign(baseLayout("").xaxis,
                            { title: { text: "Month" } }),
       yaxis: Object.assign(baseLayout("").yaxis,
-                           { title: { text: "Sum radiance (nW/cm²/sr)" } }),
+                           { title: { text: "Sum radiance (nW cm<sup>-2</sup> sr<sup>-1</sup>)" } }),
     }), PLOT_CFG);
   } else {
     Plotly.purge("detail-ntl");
@@ -303,6 +303,15 @@ function wireMapClicks(districtIndex) {
   }
 }
 
+// Wrap a long colorbar title at the space nearest the midpoint, with <br>.
+function wrap2(s) {
+  if (s.length <= 14) return s;
+  const mid = Math.floor(s.length / 2);
+  let i = s.lastIndexOf(" ", mid);
+  if (i < 0) i = s.indexOf(" ", mid);
+  return i < 0 ? s : s.slice(0, i) + "<br>" + s.slice(i + 1);
+}
+
 function choropleth(divId, panel, geo, metric, label, year, cmap) {
   const sub = panel.filter(r => r.year === year && r[metric] != null);
   const trace = {
@@ -315,15 +324,19 @@ function choropleth(divId, panel, geo, metric, label, year, cmap) {
     text: sub.map(r => `<b>${r.d_name || "—"}</b><br>${stateName(r.pc11_s_id)}`),
     hovertemplate: "%{text}<br>" + label + ": %{z:,.0f}<extra></extra>",
     marker: { line: { width: 0.3, color: "rgba(15,23,42,0.35)" } },
-    colorbar: { title: { text: label, font: { ...FONT, size: 11 } },
+    colorbar: { title: { text: wrap2(label), font: { ...FONT, size: 11 } },
+                orientation: "h",
                 tickfont: { ...FONT, size: 10 },
-                thickness: 10, len: 0.7, x: 1, xpad: 4 },
+                thickness: 8, len: 0.7,
+                x: 0.5, xanchor: "center",
+                y: -0.04, yanchor: "top",
+                outlinewidth: 0 },
   };
   Plotly.newPlot(divId, [trace], {
-    mapbox: { style: "carto-positron", center: { lat: 22, lon: 80 }, zoom: 3.3 },
-    margin: { l: 0, r: 0, t: 8, b: 0 },
+    mapbox: { style: "carto-positron", center: { lat: 22, lon: 80 }, zoom: 3.1 },
+    margin: { l: 0, r: 0, t: 8, b: 64 },     // bottom space for the colorbar
     paper_bgcolor: BG,
-    height: 480,
+    height: 420,
     font: FONT,
   }, PLOT_CFG);
 }
@@ -431,7 +444,7 @@ function ntlStateTrend(divId, monthly) {
   stateTrend(divId, monthly, {
     xField: "date", yField: "sum_radiance",
     title: "Monthly VIIRS NTL — sum radiance by state",
-    xTitle: "Month", yTitle: "Sum radiance (nW/cm²/sr)",
+    xTitle: "Month", yTitle: "Sum radiance (nW cm<sup>-2</sup> sr<sup>-1</sup>)",
     hoverX: "|%Y-%m", mode: "lines",
   });
 }
@@ -460,7 +473,7 @@ function scatterBvNtl(divId, panel, year) {
   };
   const L = baseLayout(`Building volume vs. NTL — ${year}`);
   L.xaxis = { ...L.xaxis, type: "log", title: { text: "Building volume (m³)" } };
-  L.yaxis = { ...L.yaxis, type: "log", title: { text: "NTL sum radiance" } };
+  L.yaxis = { ...L.yaxis, type: "log", title: { text: "NTL sum radiance (nW cm<sup>-2</sup> sr<sup>-1</sup>)" } };
   L.height = 460;
   Plotly.newPlot(divId, [trace], L, PLOT_CFG);
 }
@@ -650,8 +663,8 @@ async function main() {
     }
     if (haveNtl) {
       choropleth("ntl-map", panel, geo, "sum_radiance",
-                 "NTL sum radiance", year, CMAP_NTL);
-      topN("ntl-top", panel, "sum_radiance", "NTL sum radiance", year);
+                 "NTL sum radiance (nW cm<sup>-2</sup> sr<sup>-1</sup>)", year, CMAP_NTL);
+      topN("ntl-top", panel, "sum_radiance", "NTL sum radiance (nW cm<sup>-2</sup> sr<sup>-1</sup>)", year);
     }
     if (haveBv && haveNtl) scatterBvNtl("scatter", panel, year);
   }
