@@ -1,5 +1,11 @@
 # India · Built & Lit
 
+[![Live dashboard](https://img.shields.io/badge/live%20dashboard-xkdr.github.io%2FDistricts--Of--India-f57d6a?style=flat-square)](https://xkdr.github.io/Districts-Of-India/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-1a1a1a?style=flat-square)](LICENSE)
+[![Julia](https://img.shields.io/badge/built%20with-Julia-9558B2?style=flat-square&logo=julia&logoColor=white)](https://julialang.org)
+[![NighttimeLights.jl](https://img.shields.io/badge/cleaned%20with-NighttimeLights.jl-1a1a1a?style=flat-square)](https://github.com/xKDR/NighttimeLights.jl)
+[![Google Earth Engine](https://img.shields.io/badge/built%20on-GEE-4285F4?style=flat-square&logo=googleearth&logoColor=white)](https://earthengine.google.com)
+
 District-level annual **building volume** and monthly **night-time lights**
 for ~640 Indian districts. Buildings via Google Earth Engine; VIIRS NTL
 cleaned locally with [NighttimeLights.jl](https://github.com/xKDR/NighttimeLights.jl).
