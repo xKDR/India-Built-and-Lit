@@ -324,19 +324,17 @@ function choropleth(divId, panel, geo, metric, label, year, cmap) {
     text: sub.map(r => `<b>${r.d_name || "—"}</b><br>${stateName(r.pc11_s_id)}`),
     hovertemplate: "%{text}<br>" + label + ": %{z:,.0f}<extra></extra>",
     marker: { line: { width: 0.3, color: "rgba(15,23,42,0.35)" } },
-    colorbar: { title: { text: wrap2(label), font: { ...FONT, size: 11 } },
-                orientation: "h",
+    colorbar: { title: { text: wrap2(label), font: { ...FONT, size: 11 },
+                         side: "top" },
                 tickfont: { ...FONT, size: 10 },
-                thickness: 8, len: 0.7,
-                x: 0.5, xanchor: "center",
-                y: -0.04, yanchor: "top",
+                thickness: 10, len: 0.78, x: 1.0, xpad: 4,
                 outlinewidth: 0 },
   };
   Plotly.newPlot(divId, [trace], {
-    mapbox: { style: "carto-positron", center: { lat: 22, lon: 80 }, zoom: 3.1 },
-    margin: { l: 0, r: 0, t: 8, b: 64 },     // bottom space for the colorbar
+    mapbox: { style: "carto-positron", center: { lat: 22, lon: 80 }, zoom: 3.3 },
+    margin: { l: 0, r: 0, t: 8, b: 0 },
     paper_bgcolor: BG,
-    height: 420,
+    height: 540,
     font: FONT,
   }, PLOT_CFG);
 }

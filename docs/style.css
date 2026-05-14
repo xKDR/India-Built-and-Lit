@@ -40,9 +40,12 @@ body {
 }
 
 .page {
-  max-width: 1240px;
+  max-width: 1600px;
   margin: 0 auto;
   padding: 0 32px 80px;
+}
+@media (min-width: 1800px) {
+  .page { padding-left: 64px; padding-right: 64px; }
 }
 
 /* ---------- header / hero ---------- */
