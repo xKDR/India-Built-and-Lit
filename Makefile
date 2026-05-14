@@ -1,4 +1,4 @@
-# Districts-Of-India build orchestration.
+# India · Built & Lit — build orchestration.
 #
 # Common entry points:
 #   make boundaries        — shapefile → districts.geojson + districts_simplified.geojson

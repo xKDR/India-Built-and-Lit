@@ -1,4 +1,4 @@
-// Districts-Of-India dashboard.
+// India · Built & Lit dashboard.
 //
 // Loads:
 //   data/districts_simplified.geojson   (required)

@@ -1,6 +1,6 @@
 # India · Built & Lit
 
-[![Live dashboard](https://img.shields.io/badge/live%20dashboard-xkdr.github.io%2FDistricts--Of--India-f57d6a?style=flat-square)](https://xkdr.github.io/Districts-Of-India/)
+[![Live dashboard](https://img.shields.io/badge/live%20dashboard-xkdr.github.io%2FIndia--Built--and--Lit-f57d6a?style=flat-square)](https://xkdr.github.io/India-Built-and-Lit/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-1a1a1a?style=flat-square)](LICENSE)
 [![Julia](https://img.shields.io/badge/built%20with-Julia-9558B2?style=flat-square&logo=julia&logoColor=white)](https://julialang.org)
 [![NighttimeLights.jl](https://img.shields.io/badge/cleaned%20with-NighttimeLights.jl-1a1a1a?style=flat-square)](https://github.com/xKDR/NighttimeLights.jl)
