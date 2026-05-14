@@ -78,9 +78,35 @@ header.hero p.sub {
 header.hero p.sub a { color: var(--primary); }
 header.hero p.sub a:hover { color: var(--primary-dark); text-decoration: underline; }
 
+/* ---------- motivation ---------- */
+
+#motivation { margin: 32px 0 8px; }
+#motivation h2 {
+  border-bottom: 1px solid var(--secondary);
+}
+#motivation p {
+  font-family: var(--font-serif);
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--fg);
+  margin: 0 0 12px;
+}
+#motivation p:last-child { margin-bottom: 0; }
+#motivation b { font-weight: 700; color: var(--secondary); }
+
 /* ---------- primer ---------- */
 
 #primer .row { gap: 20px; }
+#primer .primer-card p + p { margin-top: 12px; }
+#primer .primer-card a {
+  color: var(--primary);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--primary);
+}
+#primer .primer-card a:hover {
+  color: var(--primary-dark);
+  border-bottom-style: solid;
+}
 .primer-card {
   background: var(--white);
   border: 1px solid var(--line);

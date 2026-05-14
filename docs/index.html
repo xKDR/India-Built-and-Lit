@@ -13,14 +13,26 @@
 <div class="page">
   <header class="hero">
     <h1>India <span class="dot">·</span> <span class="accent">Built &amp; Lit</span></h1>
-    <p class="sub">
-      A district-level panel of <b>annual building volume</b>
-      (Google Open Buildings 2.5D Temporal) and <b>monthly night-time lights</b>
-      (VIIRS DNB) for ~640 SHRUG / PC11 districts. Building data is computed
-      server-side on Google Earth Engine; VIIRS is cleaned locally with
-      <a target="_blank" rel="noopener" href="https://github.com/xKDR/NighttimeLights.jl">NighttimeLights.jl</a>.
-    </p>
   </header>
+
+  <section id="motivation">
+    <h2>Why alternative data?</h2>
+    <p>
+      Many questions in Indian public policy — economic activity, investment,
+      urbanisation, the functioning of public services — need
+      <b>granular, timely</b> data. India's official statistical system,
+      hampered by limited state capability, releases statistics that are
+      <b>coarse</b> (state-level at best), <b>slow</b> (long lags), and
+      <b>narrow in scope</b> (whole domains such as physical capital stock
+      simply aren't covered).
+    </p>
+    <p>
+      Satellites help fill these gaps <i>today</i>. The two layers below give
+      a district-level read on the Indian economy from space — one capturing
+      <b>activity in motion</b>, the other capturing
+      <b>capital that has accumulated</b>.
+    </p>
+  </section>
 
   <main>
     <section id="primer">
@@ -28,21 +40,42 @@
         <div class="primer-card">
           <h3>Building volume <span class="stock">stock</span></h3>
           <p>
-            Annual integral of building height over a district from the
-            Google Open Buildings 2.5D Temporal product — essentially
-            roof-area × mean height. It measures the accumulated built
-            environment: factories, housing, infrastructure. Best read as a
-            <b>stock</b> series: how much has been <i>built up to date</i>.
+            Satellite imagery and deep learning together yield the
+            <b>3-D structure</b> of the built environment: footprints, heights,
+            and the volume of every building, every year. We use
+            <a target="_blank" rel="noopener"
+               href="https://developers.google.com/earth-engine/datasets/catalog/GOOGLE_Research_open-buildings-temporal_v1">
+              Google's Open Buildings 2.5D Temporal</a> — Sentinel-2 inputs,
+            ~4 m effective resolution, annual snapshots 2016–2023.
+          </p>
+          <p>
+            Building volume measures the <b>physical capital stock</b> of a
+            district — the accumulated investment in factories, housing, and
+            urban infrastructure. Unlike flows that fluctuate from month to
+            month, the stock <i>grows monotonically</i> as the place builds
+            out.
           </p>
         </div>
         <div class="primer-card">
           <h3>Night-time lights <span class="flow">flow</span></h3>
           <p>
-            Monthly VIIRS DNB radiance summed across each district.
-            Brighter lights at night track <i>present</i> economic activity —
-            factories running, vehicles moving, homes lit. As activity
-            picks up or slumps, the NTL series moves with it. Best read as a
-            <b>flow</b> series: how much is happening <i>this month</i>.
+            Satellites photograph the Earth at night, and
+            <b>more economic activity goes with more light</b>
+            (<a target="_blank" rel="noopener"
+                href="https://www.aeaweb.org/articles?id=10.1257/aer.102.2.994">
+              Henderson, Storeygard &amp; Weil, 2012</a>). We use the
+            <a target="_blank" rel="noopener"
+               href="https://developers.google.com/earth-engine/datasets/catalog/NOAA_VIIRS_DNB_MONTHLY_V1_VCMSLCFG">
+              NOAA VIIRS DNB monthly composite</a> — 500 m pixels, global,
+            since 2014; cleaned with the PSTT2021 pipeline via
+            <a target="_blank" rel="noopener"
+               href="https://github.com/xKDR/NighttimeLights.jl">NighttimeLights.jl</a>.
+          </p>
+          <p>
+            NTL captures the <b>flow of economic activity</b> — factories
+            running, vehicles moving, homes lit. When activity picks up or
+            slows, the lights move with it. Prosperous places are brighter,
+            and as a place grows more prosperous, it gets brighter.
           </p>
         </div>
       </div>
