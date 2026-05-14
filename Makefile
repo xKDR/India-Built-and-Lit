@@ -65,7 +65,8 @@ $(CLEAN_DIR)/bv_annual.csv: julia/clean_buildings.jl $(BV_CSVS)
 	$(JULIA) julia/clean_buildings.jl
 
 dashboard: $(DASH_DATA)/districts_simplified.geojson \
-           $(DASH_DATA)/bv_annual.csv  ## Stage data into docs/data/
+           $(DASH_DATA)/bv_annual.csv \
+           $(if $(wildcard $(CLEAN_DIR)/viirs_monthly.csv),$(DASH_DATA)/viirs_monthly.csv)  ## Stage data into docs/data/
 
 $(DASH_DATA)/districts_simplified.geojson: $(CLEAN_DIR)/districts_simplified.geojson
 	@mkdir -p $(DASH_DATA)
@@ -74,9 +75,10 @@ $(DASH_DATA)/districts_simplified.geojson: $(CLEAN_DIR)/districts_simplified.geo
 $(DASH_DATA)/bv_annual.csv: $(CLEAN_DIR)/bv_annual.csv
 	@mkdir -p $(DASH_DATA)
 	cp $< $@
-	@if [ -f $(CLEAN_DIR)/viirs_monthly.csv ]; then \
-	    cp $(CLEAN_DIR)/viirs_monthly.csv $(DASH_DATA)/viirs_monthly.csv; \
-	fi
+
+$(DASH_DATA)/viirs_monthly.csv: $(CLEAN_DIR)/viirs_monthly.csv
+	@mkdir -p $(DASH_DATA)
+	cp $< $@
 
 serve: dashboard  ## Local preview at http://localhost:8080/
 	$(PY) -m http.server --directory docs 8080

@@ -50,7 +50,10 @@ function process_district(d::DistrictRow)
     # NighttimeLights internally emits a per-call `@warn` with full backtrace
     # when outlier_variance fails on small/noisy cubes — silence it.
     cleaned = with_logger(NullLogger()) do
-        clean_complete(rad, cf)
+        # bgthreshold=4 matches what the xKDR Russia processing uses — the
+        # default 0.4 leaves rural pixels in as low-level noise that dominates
+        # district sums in sparsely-lit regions.
+        clean_complete(rad, cf; bgthreshold=4)
     end
     cf = nothing
     cleaned = mask(cleaned; with=d.geom)
