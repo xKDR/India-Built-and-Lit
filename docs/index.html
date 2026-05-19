@@ -55,6 +55,12 @@
             month, the stock <i>grows monotonically</i> as the place builds
             out.
           </p>
+          <p class="caveat">
+            Note: the building-volume series is the <b>raw</b> Open Buildings
+            2.5D output — it has not been put through a cleaning pipeline.
+            The <b>2022</b> snapshot in particular looks problematic and
+            should be treated with caution.
+          </p>
         </div>
         <div class="primer-card">
           <h3>Night-time lights <span class="flow">flow</span></h3>
@@ -94,6 +100,9 @@
         <span class="year-tag" id="detail-subtitle">Pick a district from the map or search</span>
       </h2>
       <div class="detail-controls">
+        <select id="state-filter" aria-label="Filter by state">
+          <option value="">All states</option>
+        </select>
         <input type="search" id="district-search"
                list="district-list" autocomplete="off"
                placeholder="Search district…" />

@@ -182,18 +182,98 @@ function buildDistrictIndex(panel, monthly) {
   return idx;
 }
 
-function populateSearch(districtIndex) {
+// Fill the district <datalist>, optionally restricted to one state id.
+function populateSearch(districtIndex, stateId = "") {
   const dl = document.getElementById("district-list");
   const opts = Array.from(districtIndex.values())
     .filter(d => !d.name.startsWith("district "))
+    .filter(d => !stateId || String(d.state) === String(stateId))
     .sort((a, b) => a.name.localeCompare(b.name))
     .map(d => `<option value="${d.name}  ·  ${stateName(d.state)}"></option>`);
   dl.innerHTML = opts.join("");
 }
 
+// Fill the state <select> with every state present in the data.
+function populateStateFilter(districtIndex) {
+  const sel = document.getElementById("state-filter");
+  if (!sel) return;
+  const states = uniq(Array.from(districtIndex.values()).map(d => String(d.state)))
+    .filter(Boolean)
+    .sort((a, b) => stateName(a).localeCompare(stateName(b)));
+  sel.innerHTML = `<option value="">All states</option>` +
+    states.map(s => `<option value="${s}">${stateName(s)}</option>`).join("");
+}
+
+// Synthesize a pseudo-"district" representing a whole state: annual BV summed
+// over the state's districts, monthly NTL summed over the state's districts.
+function stateAggregate(stateId, panel, monthly) {
+  const sid = String(stateId);
+  const byYear = new Map();
+  for (const r of panel) {
+    if (String(r.pc11_s_id) !== sid) continue;
+    const e = byYear.get(r.year) || { year: r.year, vol: 0, hasBv: false };
+    if (r.volume_m3 != null) { e.vol += r.volume_m3; e.hasBv = true; }
+    byYear.set(r.year, e);
+  }
+  const panelAgg = [...byYear.values()]
+    .map(e => ({ year: e.year, volume_m3: e.hasBv ? e.vol : null }));
+
+  const byDate = new Map();
+  if (monthly) {
+    for (const r of monthly) {
+      if (String(r.pc11_s_id) !== sid || r.sum_radiance == null) continue;
+      const e = byDate.get(r.date) || { date: r.date, sum_radiance: 0 };
+      e.sum_radiance += r.sum_radiance;
+      byDate.set(r.date, e);
+    }
+  }
+  return {
+    id: sid, state: sid, name: stateName(sid), isState: true,
+    panel: panelAgg, monthly: [...byDate.values()],
+  };
+}
+
+// --- state bounding boxes (for zooming the choropleth) ---
+let STATE_BBOX = new Map();   // stateId → [minLon, minLat, maxLon, maxLat]
+
+function buildStateBBoxes(geo) {
+  const acc = new Map();
+  const walk = (coords, bb) => {
+    if (typeof coords[0] === "number") {
+      const [lon, lat] = coords;
+      if (lon < bb[0]) bb[0] = lon;
+      if (lat < bb[1]) bb[1] = lat;
+      if (lon > bb[2]) bb[2] = lon;
+      if (lat > bb[3]) bb[3] = lat;
+    } else for (const c of coords) walk(c, bb);
+  };
+  for (const f of geo.features) {
+    const s = String(f.properties.pc11_s_id);
+    const bb = acc.get(s) || [Infinity, Infinity, -Infinity, -Infinity];
+    walk(f.geometry.coordinates, bb);
+    acc.set(s, bb);
+  }
+  return acc;
+}
+
+// India default vs. a state bbox → mapbox {center, zoom}.
+function mapView(focusState) {
+  if (focusState && STATE_BBOX.has(String(focusState))) {
+    const bb = STATE_BBOX.get(String(focusState));
+    const span = Math.max(bb[2] - bb[0], bb[3] - bb[1]) || 1;
+    return {
+      center: { lon: (bb[0] + bb[2]) / 2, lat: (bb[1] + bb[3]) / 2 },
+      zoom: Math.min(8.5, Math.max(3.2, Math.log2(360 / span) - 1.2)),
+    };
+  }
+  return { center: { lat: 22, lon: 80 }, zoom: 3.3 };
+}
+
 function renderDetail(d) {
-  document.getElementById("detail-subtitle").textContent =
-    `${d.name} · ${stateName(d.state)} · pc11_d_id ${d.id}`;
+  const scope = d.isState ? "state" : "district";
+  document.getElementById("detail-subtitle").textContent = d.isState
+    ? `${d.name} — all districts aggregated`
+    : `${d.name} · ${stateName(d.state)} · pc11_d_id ${d.id}`;
   document.getElementById("detail-charts").hidden = false;
   document.getElementById("detail-clear").hidden = false;
 
@@ -219,7 +299,7 @@ function renderDetail(d) {
     Plotly.purge("detail-bv");
     document.getElementById("detail-bv").innerHTML =
       "<p style='color:var(--muted);font-family:var(--font-serif);font-style:italic'>" +
-      "No building-volume data for this district.</p>";
+      `No building-volume data for this ${scope}.</p>`;
   }
 
   // NTL (monthly)
@@ -259,30 +339,59 @@ function clearDetail() {
   Plotly.purge("detail-ntl");
 }
 
-function wireDetail(districtIndex) {
+function wireDetail(districtIndex, onStateChange) {
+  populateStateFilter(districtIndex);
   populateSearch(districtIndex);
 
   // Build a fast name → district lookup (case-insensitive). Also matches the
-  // exact "Name  ·  state/id" datalist entry the user just picked.
+  // exact "Name  ·  State" datalist entry the user just picked.
   const byKey = new Map();
   for (const d of districtIndex.values()) {
     byKey.set(d.name.toLowerCase(), d);
     byKey.set(`${d.name.toLowerCase()}  ·  ${stateName(d.state).toLowerCase()}`, d);
   }
 
-  const input = document.getElementById("district-search");
+  const input  = document.getElementById("district-search");
+  const stSel  = document.getElementById("state-filter");
+
   const pick = () => {
     const v = input.value.trim().toLowerCase();
     if (!v) return;
-    const d = byKey.get(v);
+    let d = byKey.get(v);
+    // If a state is selected, prefer a same-state match (district names are
+    // not globally unique — e.g. Aurangabad in MH and Bihar).
+    if (stSel && stSel.value) {
+      for (const cand of districtIndex.values()) {
+        if (String(cand.state) === stSel.value &&
+            cand.name.toLowerCase() === v.split("  ·  ")[0]) { d = cand; break; }
+      }
+    }
     if (d) renderDetail(d);
   };
   input.addEventListener("change", pick);
   input.addEventListener("keydown", e => { if (e.key === "Enter") pick(); });
 
+  // Selecting a state narrows the district datalist AND refocuses the maps /
+  // top-N / scatter on that state, showing the state-aggregate detail.
+  if (stSel) {
+    stSel.addEventListener("change", () => {
+      populateSearch(districtIndex, stSel.value);
+      input.value = "";
+      input.placeholder = stSel.value
+        ? `Search district in ${stateName(stSel.value)}…`
+        : "Search district…";
+      if (typeof onStateChange === "function") onStateChange(stSel.value);
+      input.focus();
+    });
+  }
+
   document.getElementById("detail-clear").addEventListener("click", () => {
     input.value = "";
+    if (stSel) { stSel.value = ""; populateSearch(districtIndex); }
+    input.placeholder = "Search district…";
     clearDetail();
+    // Un-focus the maps back to all-India.
+    if (typeof onStateChange === "function") onStateChange("");
   });
 }
 
@@ -293,7 +402,7 @@ function wireMapClicks(districtIndex) {
     const d = districtIndex.get(String(pt.location));
     if (d) {
       const input = document.getElementById("district-search");
-      if (input) input.value = `${d.name}  ·  ${d.state}/${d.id}`;
+      if (input) input.value = `${d.name}  ·  ${stateName(d.state)}`;
       renderDetail(d);
     }
   };
@@ -312,8 +421,10 @@ function wrap2(s) {
   return i < 0 ? s : s.slice(0, i) + "<br>" + s.slice(i + 1);
 }
 
-function choropleth(divId, panel, geo, metric, label, year, cmap) {
-  const sub = panel.filter(r => r.year === year && r[metric] != null);
+function choropleth(divId, panel, geo, metric, label, year, cmap, title, focusState) {
+  let sub = panel.filter(r => r.year === year && r[metric] != null);
+  if (focusState) sub = sub.filter(r => String(r.pc11_s_id) === String(focusState));
+  const view = mapView(focusState);
   const trace = {
     type: "choroplethmapbox",
     geojson: geo,
@@ -327,24 +438,26 @@ function choropleth(divId, panel, geo, metric, label, year, cmap) {
     colorbar: { title: { text: wrap2(label), font: { ...FONT, size: 11 },
                          side: "top" },
                 tickfont: { ...FONT, size: 10 },
-                thickness: 10, len: 0.78, x: 1.0, xpad: 4,
+                thickness: 10, len: 0.74, x: 1.0, xpad: 4,
                 outlinewidth: 0 },
   };
+  const titleSuffix = focusState ? ` · ${stateName(focusState)}` : "";
   Plotly.newPlot(divId, [trace], {
-    mapbox: { style: "carto-positron", center: { lat: 22, lon: 80 }, zoom: 3.3 },
-    margin: { l: 0, r: 0, t: 8, b: 0 },
+    mapbox: { style: "carto-positron", center: view.center, zoom: view.zoom },
+    margin: { l: 0, r: 0, t: 44, b: 0 },
+    title: { text: `${title}${titleSuffix} · ${year}`,
+             font: { ...FONT, size: 15, color: COLOR_DARK },
+             x: 0, xref: "paper", xanchor: "left", yanchor: "top" },
     paper_bgcolor: BG,
-    height: 540,
+    height: 560,
     font: FONT,
   }, PLOT_CFG);
 }
 
-function topN(divId, panel, metric, label, year, n = 20) {
-  const sub = panel
-    .filter(r => r.year === year && r[metric] != null)
-    .sort((a, b) => b[metric] - a[metric])
-    .slice(0, n)
-    .reverse();
+function topN(divId, panel, metric, label, year, n = 20, focusState) {
+  let rows = panel.filter(r => r.year === year && r[metric] != null);
+  if (focusState) rows = rows.filter(r => String(r.pc11_s_id) === String(focusState));
+  const sub = rows.sort((a, b) => b[metric] - a[metric]).slice(0, n).reverse();
   const trace = {
     type: "bar",
     orientation: "h",
@@ -354,7 +467,9 @@ function topN(divId, panel, metric, label, year, n = 20) {
     hovertemplate: "<b>%{y}</b> · %{text}<br>" + label + ": %{x:,.0f}<extra></extra>",
     marker: { color: COLOR },
   };
-  const L = baseLayout(`Top ${n} districts — ${label}`);
+  const scopeLabel = focusState
+    ? `${stateName(focusState)} districts` : `Top ${n} districts`;
+  const L = baseLayout(`${scopeLabel} — ${label}`);
   L.margin.l = 140;
   L.xaxis.title = { text: label };
   L.yaxis.automargin = true;
@@ -456,10 +571,11 @@ function bvStateTrend(divId, bvRows) {
   });
 }
 
-function scatterBvNtl(divId, panel, year) {
-  const sub = panel.filter(r => r.year === year
-                             && r.sum_radiance != null
-                             && r.volume_m3 != null);
+function scatterBvNtl(divId, panel, year, focusState) {
+  let sub = panel.filter(r => r.year === year
+                            && r.sum_radiance != null
+                            && r.volume_m3 != null);
+  if (focusState) sub = sub.filter(r => String(r.pc11_s_id) === String(focusState));
   const trace = {
     type: "scatter", mode: "markers",
     x: sub.map(r => r.volume_m3),
@@ -469,7 +585,8 @@ function scatterBvNtl(divId, panel, year) {
     marker: { size: 6, opacity: 0.55, color: COLOR,
               line: { width: 0.3, color: "rgba(15,23,42,0.4)" } },
   };
-  const L = baseLayout(`Building volume vs. NTL — ${year}`);
+  const sfx = focusState ? ` · ${stateName(focusState)}` : "";
+  const L = baseLayout(`Building volume vs. NTL${sfx} — ${year}`);
   L.xaxis = { ...L.xaxis, type: "log", title: { text: "Building volume (m³)" } };
   L.yaxis = { ...L.yaxis, type: "log", title: { text: "NTL sum radiance (nW cm<sup>-2</sup> sr<sup>-1</sup>)" } };
   L.height = 460;
@@ -649,22 +766,33 @@ async function main() {
   setStatus(`${panel.length.toLocaleString()} district-years · ${parts.join(" + ")}`);
   showSections({ haveBv, haveNtl });
 
+  STATE_BBOX = buildStateBBoxes(geo);
   const initYear = populateYearSelect(panel, haveBv, haveNtl);
+  // Currently-selected state ("" = all India); set by the state-filter select.
+  const currentState = () =>
+    document.getElementById("state-filter")?.value || "";
+  const currentYear = () => {
+    const sel = document.querySelector('[data-control="year"]');
+    return sel ? Number(sel.value) : initYear;
+  };
 
   function render(year) {
     const tag = document.getElementById("year-tag");
     if (tag) tag.textContent = year;
+    const st = currentState();
     if (haveBv) {
       choropleth("bv-map", panel, geo, "volume_m3",
-                 "Building volume (m³)", year, CMAP_VOL);
-      topN("bv-top", panel, "volume_m3", "Building volume (m³)", year);
+                 "Building volume (m³)", year, CMAP_VOL,
+                 "Built-up volume by district", st);
+      topN("bv-top", panel, "volume_m3", "Building volume (m³)", year, 20, st);
     }
     if (haveNtl) {
       choropleth("ntl-map", panel, geo, "sum_radiance",
-                 "NTL sum radiance (nW cm<sup>-2</sup> sr<sup>-1</sup>)", year, CMAP_NTL);
-      topN("ntl-top", panel, "sum_radiance", "NTL sum radiance (nW cm<sup>-2</sup> sr<sup>-1</sup>)", year);
+                 "NTL sum radiance (nW cm<sup>-2</sup> sr<sup>-1</sup>)", year, CMAP_NTL,
+                 "Night-time lights by district", st);
+      topN("ntl-top", panel, "sum_radiance", "NTL sum radiance (nW cm<sup>-2</sup> sr<sup>-1</sup>)", year, 20, st);
     }
-    if (haveBv && haveNtl) scatterBvNtl("scatter", panel, year);
+    if (haveBv && haveNtl) scatterBvNtl("scatter", panel, year, st);
   }
   render(initYear);
 
@@ -699,9 +827,19 @@ async function main() {
     sel.addEventListener("change", () => render(Number(sel.value)));
   }
 
-  // District detail (search + click-from-map).
+  // District detail (search + click-from-map). When a state is picked (but no
+  // district yet), refocus the choropleths/top-N/scatter on that state and
+  // show the state-aggregate detail.
   const districtIndex = buildDistrictIndex(panel, monthly);
-  wireDetail(districtIndex);
+  const onStateChange = stateId => {
+    render(currentYear());
+    if (stateId) {
+      renderDetail(stateAggregate(stateId, panel, monthly));
+    } else {
+      clearDetail();
+    }
+  };
+  wireDetail(districtIndex, onStateChange);
   // Map click handlers must be attached after the choropleths are drawn.
   wireMapClicks(districtIndex);
 }

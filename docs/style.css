@@ -98,6 +98,13 @@ header.hero p.sub a:hover { color: var(--primary-dark); text-decoration: underli
 
 #primer .row { gap: 20px; }
 #primer .primer-card p + p { margin-top: 12px; }
+#primer .primer-card .caveat {
+  font-size: 13px;
+  background: var(--theme);
+  border-left: 3px solid var(--primary);
+  padding: 9px 12px;
+  color: var(--secondary);
+}
 #primer .primer-card a {
   color: var(--primary);
   text-decoration: none;
@@ -214,11 +221,16 @@ section h2 .year-tag {
   font-family: var(--font-mono);
   text-transform: none;
   letter-spacing: 0;
-  padding: 4px 10px;
+  padding: 5px 32px 5px 10px;
   border: 1px solid var(--secondary);
   border-radius: 0;
   background: var(--white);
   color: var(--secondary);
+  appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' stroke='%23f57d6a' stroke-width='2' fill='none' stroke-linecap='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
 }
 .controls select:focus {
   outline: 2px solid var(--primary);
@@ -272,7 +284,23 @@ section > div:not(.row):not(.controls):not(.year-tag) {
   border-radius: 0;
   appearance: none;
 }
-.detail-controls input[type="search"]:focus {
+.detail-controls select {
+  font: 14px/1.4 var(--font-sans);
+  font-weight: 600;
+  padding: 10px 38px 10px 14px;
+  border: 1px solid var(--secondary);
+  background: var(--white);
+  color: var(--secondary);
+  border-radius: 0;
+  appearance: none;
+  cursor: pointer;
+  /* custom coral chevron — the native arrow isn't on-brand */
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' stroke='%23f57d6a' stroke-width='2' fill='none' stroke-linecap='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+.detail-controls input[type="search"]:focus,
+.detail-controls select:focus {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
 }

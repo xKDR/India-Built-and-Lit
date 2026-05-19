@@ -13,7 +13,8 @@ using ArchGDAL
 using JSON3
 
 const ROOT      = joinpath(@__DIR__, "..")
-const SHP_PATH  = joinpath(ROOT, "data", "boundaries", "district.shp")
+const BOUND_DIR = joinpath(ROOT, "data", "boundaries")
+const SHP_PATH  = joinpath(BOUND_DIR, "district.shp")
 const CLEAN_DIR = joinpath(ROOT, "data", "clean")
 const KEEP      = ["pc11_s_id", "pc11_d_id", "d_name"]
 
@@ -55,8 +56,12 @@ end
 
 function main()
     mkpath(CLEAN_DIR)
+    # Full-resolution geojson — large, gitignored, used locally for accurate
+    # masking by clean_viirs.jl.
     write_fc(read_features(false), joinpath(CLEAN_DIR, "districts.geojson"))
-    write_fc(read_features(true),  joinpath(CLEAN_DIR, "districts_simplified.geojson"))
+    # Simplified geojson — small enough to commit; lives in data/boundaries/
+    # and is served from GitHub so the notebooks can fetch it directly.
+    write_fc(read_features(true),  joinpath(BOUND_DIR, "districts_simplified.geojson"))
 end
 
 isinteractive() || main()

@@ -30,20 +30,26 @@ cleaned locally with [NighttimeLights.jl](https://github.com/xKDR/NighttimeLight
 
 1. **Buildings** — `gee/extract_building_volume.py` queues annual
    `Export.table.toDrive` tasks computing `sum(building_height × pixel_area)`
-   per district. `gee/download_from_drive.py` pulls the CSVs into `data/raw/`.
-2. **VIIRS** — handled entirely locally. `julia/clean_viirs.jl` loops over
-   SHRUG districts (threaded); for each, `NighttimeLights.readnl` loads only
-   the bbox of that district from the local SL monthly TIFs, then
-   `clean_complete` (the PSTT2021 pipeline) cleans the time series before the
-   mask + sum. Default TIF paths: `/mnt/giant-disk/ntl/sl/{rad,cf}/` —
-   override with `DOI_RAD_PATH` / `DOI_CF_PATH` env vars. A small number of
-   districts trip a DiskArrays "sorted indices" error on `readnl`'s lazy
-   crop; those are caught, warned once, and skipped.
-3. **Merge** — `julia/merge_panel.jl` rolls VIIRS monthly to annual and joins
-   with the buildings panel.
-3. **[dashboard/build_dashboard.py](dashboard/build_dashboard.py)** — generates
-   a single self-contained `docs/index.html` with Plotly.
-4. **[docs/](docs/)** — output directory served by GitHub Pages.
+   per district; `gee/download_from_drive.py` pulls the CSVs into `data/raw/`;
+   `julia/clean_buildings.jl` concatenates them into `data/clean/bv_annual.csv`.
+2. **VIIRS** — `julia/clean_viirs.jl` loops over SHRUG districts (threaded);
+   for each, `NighttimeLights.readnl` loads the bbox of that district from the
+   local SL monthly TIFs, then `clean_complete` (the PSTT2021 pipeline) cleans
+   the time series before the mask + sum → `data/clean/viirs_monthly.csv`.
+   Default TIF paths: `/mnt/giant-disk/ntl/sl/{rad,cf}/` — override with
+   `DOI_RAD_PATH` / `DOI_CF_PATH`.
+3. **Dashboard** — `make dashboard` stages `bv_annual.csv`,
+   `viirs_monthly.csv` and the simplified GeoJSON into `docs/data/`. The
+   static page (`docs/index.html` + `app.js`) fetches them at runtime; it
+   builds the annual NTL aggregate and the BV⨝NTL join in the browser.
+4. **[docs/](docs/)** — served by GitHub Pages.
+
+### Notebook alternative
+
+[`notebooks/`](notebooks/) holds reproducible-research notebooks that produce
+the same `data/clean/` outputs from GEE: `building_volume.ipynb` (Python) and
+`nighttime_lights.ipynb` (Python → Julia, two kernels). Both expose a
+resampling knob. See [notebooks/README.md](notebooks/README.md).
 
 ## End-to-end run
 

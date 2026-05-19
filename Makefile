@@ -1,7 +1,8 @@
 # India · Built & Lit — build orchestration.
 #
 # Common entry points:
-#   make boundaries        — shapefile → districts.geojson + districts_simplified.geojson
+#   make boundaries        — shapefile → data/clean/districts.geojson (full) +
+#                            data/boundaries/districts_simplified.geojson (committed)
 #   make export-bv         — queue building-volume tasks on GEE
 #   make export-viirs      — queue monthly-VIIRS raster tasks on GEE
 #   make tasks             — list current GEE task status
@@ -17,7 +18,7 @@
 #     data/raw/                   (buildings_YYYY.csv)
 
 PROJECT       ?= gee-ntl-470405
-GEOJSON       ?= data/clean/districts_simplified.geojson
+GEOJSON       ?= data/boundaries/districts_simplified.geojson
 NTL_PATH      ?= ../NighttimeLights.jl
 
 BV_START      ?= 2016
@@ -40,7 +41,10 @@ all: boundaries bv viirs dashboard  ## boundaries → bv + viirs → dashboard
 
 boundaries: $(CLEAN_DIR)/districts.geojson  ## SHRUG shapefile → GeoJSONs
 
-$(CLEAN_DIR)/districts.geojson: data/boundaries/district.shp julia/prepare_boundaries.jl
+# One run of prepare_boundaries.jl writes BOTH the full geojson (data/clean/,
+# gitignored) and the simplified one (data/boundaries/, committed).
+$(CLEAN_DIR)/districts.geojson data/boundaries/districts_simplified.geojson &: \
+		data/boundaries/district.shp julia/prepare_boundaries.jl
 	$(JULIA) julia/prepare_boundaries.jl
 
 julia-deps:  ## Instantiate the Julia env (use local NighttimeLights.jl)
@@ -68,7 +72,7 @@ dashboard: $(DASH_DATA)/districts_simplified.geojson \
            $(DASH_DATA)/bv_annual.csv \
            $(if $(wildcard $(CLEAN_DIR)/viirs_monthly.csv),$(DASH_DATA)/viirs_monthly.csv)  ## Stage data into docs/data/
 
-$(DASH_DATA)/districts_simplified.geojson: $(CLEAN_DIR)/districts_simplified.geojson
+$(DASH_DATA)/districts_simplified.geojson: data/boundaries/districts_simplified.geojson
 	@mkdir -p $(DASH_DATA)
 	cp $< $@
 
