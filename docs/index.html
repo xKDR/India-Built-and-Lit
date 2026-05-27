@@ -153,6 +153,42 @@
       <div id="scatter"></div>
     </section>
 
+    <section id="reproduce">
+      <h2>Reproduce / adapt</h2>
+      <p class="repro-lead">
+        The entire pipeline runs in two notebooks on Google Colab —
+        no setup, no installs. All you need is a <b>Google account</b>
+        (for Colab + Drive) and a <b>free Google Earth Engine project</b>.
+        Click a button, follow the cells, get the same CSVs the dashboard
+        above is built from.
+      </p>
+      <div class="row">
+        <a class="reproduce-card" target="_blank" rel="noopener"
+           href="https://colab.research.google.com/github/xKDR/India-Built-and-Lit/blob/main/building_volume.ipynb">
+          <h3>Building volume</h3>
+          <p>Annual built-up volume per district from Google Open
+             Buildings 2.5D Temporal. Pure Python, single Colab kernel.</p>
+          <span class="open-colab">▶ Open in Colab</span>
+        </a>
+        <a class="reproduce-card" target="_blank" rel="noopener"
+           href="https://colab.research.google.com/github/xKDR/India-Built-and-Lit/blob/main/nighttime_lights.ipynb">
+          <h3>Night-time lights</h3>
+          <p>Monthly VIIRS NTL per district, cleaned with
+             <a target="_blank" rel="noopener"
+                href="https://github.com/xKDR/NighttimeLights.jl">NighttimeLights.jl</a>.
+             Python (download) then Julia (clean), bridged by Drive.</p>
+          <span class="open-colab">▶ Open in Colab</span>
+        </a>
+      </div>
+      <p class="repro-adapt">
+        Want this for <i>your</i> country instead — or at a different
+        administrative level, say <b>cities</b> rather than districts? Swap
+        the boundary GeoJSON URL at the top of each notebook with one for
+        your geography. Everything downstream — the GEE reductions, the
+        cleaning, the per-region aggregation — just works.
+      </p>
+    </section>
+
     <section id="downloads-section" hidden>
       <h2>Downloads</h2>
       <ul id="downloads"></ul>

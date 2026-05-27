@@ -263,6 +263,75 @@ section > div:not(.row):not(.controls):not(.year-tag) {
   color: var(--muted);
 }
 
+/* ---------- reproduce / adapt section ---------- */
+
+#reproduce .repro-lead {
+  font-family: var(--font-serif);
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--fg);
+  margin: 0 0 22px;
+}
+#reproduce .repro-adapt {
+  font-family: var(--font-serif);
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--secondary);
+  background: var(--white);
+  border-left: 3px solid var(--primary);
+  padding: 12px 16px;
+  margin: 22px 0 0;
+}
+#reproduce .row { gap: 20px; }
+
+a.reproduce-card {
+  display: block;
+  background: var(--white);
+  border: 1px solid var(--line);
+  padding: 22px 24px;
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 0.15s, transform 0.05s;
+}
+a.reproduce-card:hover {
+  border-color: var(--primary);
+}
+a.reproduce-card:active { transform: translateY(1px); }
+
+a.reproduce-card h3 {
+  margin: 0 0 10px;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--secondary);
+}
+a.reproduce-card p {
+  margin: 0 0 16px;
+  font-family: var(--font-serif);
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--fg);
+}
+a.reproduce-card p a {
+  color: var(--primary);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--primary);
+}
+a.reproduce-card .open-colab {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: var(--primary);
+  color: var(--white);
+  padding: 8px 14px;
+}
+a.reproduce-card:hover .open-colab {
+  background: var(--primary-dark);
+}
+
 /* ---------- district detail panel ---------- */
 
 .detail-controls {
