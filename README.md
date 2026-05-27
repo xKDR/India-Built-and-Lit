@@ -65,7 +65,7 @@ python3 gee/download_from_drive.py \
     --folder Districts-Of-India-Buildings --dest data/raw \
     --pattern 'buildings_.*\.csv'
 
-# 4. (one-time) point Julia env at the local NighttimeLights.jl checkout
+# 4. (one-time) instantiate the Julia env (pulls NighttimeLights.jl from GitHub)
 make julia-deps
 
 # 5. shapefile → GeoJSONs, VIIRS clean, merge panel

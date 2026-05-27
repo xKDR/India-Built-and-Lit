@@ -19,7 +19,7 @@
 
 PROJECT       ?= gee-ntl-470405
 GEOJSON       ?= data/boundaries/districts_simplified.geojson
-NTL_PATH      ?= ../NighttimeLights.jl
+NTL_URL       ?= https://github.com/xKDR/NighttimeLights.jl
 
 BV_START      ?= 2016
 BV_END        ?= 2023
@@ -47,8 +47,8 @@ $(CLEAN_DIR)/districts.geojson data/boundaries/districts_simplified.geojson &: \
 		data/boundaries/district.shp julia/prepare_boundaries.jl
 	$(JULIA) julia/prepare_boundaries.jl
 
-julia-deps:  ## Instantiate the Julia env (use local NighttimeLights.jl)
-	$(JULIA) -e 'using Pkg; Pkg.develop(path="$(NTL_PATH)"); Pkg.instantiate()'
+julia-deps:  ## Instantiate the Julia env (NighttimeLights.jl from GitHub)
+	$(JULIA) -e 'using Pkg; Pkg.add(url="$(NTL_URL)"); Pkg.instantiate()'
 
 export-bv: $(GEOJSON)  ## Queue building-volume tasks on GEE
 	$(PY) gee/extract_building_volume.py \
