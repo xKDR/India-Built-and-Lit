@@ -465,3 +465,54 @@ footer .cite-self {
 }
 footer .cites { padding-left: 18px; margin: 0; }
 footer .cites li { margin: 4px 0; }
+
+/* ---------- phone / narrow screens ---------- */
+@media (max-width: 640px) {
+  body { font-size: 14px; }
+  .page { padding: 0 16px 56px; }
+
+  header.hero { padding: 32px 0 20px; margin-bottom: 24px; }
+  header.hero h1 { font-size: 28px; letter-spacing: 0; }
+  header.hero h1 .dot { margin: 0 2px; }
+
+  section { margin: 32px 0; }
+  section h2 {
+    font-size: 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  section h2 .year-tag { font-size: 12px; }
+
+  .row { gap: 16px; }
+  .row > div,
+  section > div:not(.row):not(.controls):not(.year-tag) { padding: 12px; }
+
+  .primer-card,
+  .reproduce-card { padding: 16px 16px; }
+  .primer-card h3,
+  .reproduce-card h3 { font-size: 16px; flex-wrap: wrap; }
+
+  .controls { display: flex; flex-wrap: wrap; gap: 10px; }
+  .controls label { font-size: 12px; }
+
+  .detail-controls { gap: 8px; }
+  .detail-controls input[type="search"],
+  .detail-controls select {
+    flex: 1 1 100%;
+    min-width: 0;
+    max-width: none;
+    font-size: 14px;
+    padding: 8px 12px;
+  }
+  .detail-controls select { padding-right: 34px; }
+
+  #downloads li {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 12px 14px;
+  }
+
+  footer { font-size: 12px; }
+  footer .cite-self { font-size: 13px; }
+}
