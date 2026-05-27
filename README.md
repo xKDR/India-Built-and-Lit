@@ -6,7 +6,7 @@
 [![NighttimeLights.jl](https://img.shields.io/badge/cleaned%20with-NighttimeLights.jl-1a1a1a?style=flat-square)](https://github.com/xKDR/NighttimeLights.jl)
 [![Google Earth Engine](https://img.shields.io/badge/built%20on-GEE-4285F4?style=flat-square&logo=googleearth&logoColor=white)](https://earthengine.google.com)
 
-District-level annual **building volume** and monthly **night-time lights**
+District-level annual **building volume** and monthly **nighttime lights**
 for ~640 Indian districts. Buildings via Google Earth Engine; VIIRS NTL
 cleaned locally with [NighttimeLights.jl](https://github.com/xKDR/NighttimeLights.jl).
 

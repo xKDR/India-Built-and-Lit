@@ -789,7 +789,7 @@ async function main() {
     if (haveNtl) {
       choropleth("ntl-map", panel, geo, "sum_radiance",
                  "NTL sum radiance (nW cm<sup>-2</sup> sr<sup>-1</sup>)", year, CMAP_NTL,
-                 "Night-time lights by district", st);
+                 "Nighttime lights by district", st);
       topN("ntl-top", panel, "sum_radiance", "NTL sum radiance (nW cm<sup>-2</sup> sr<sup>-1</sup>)", year, 20, st);
     }
     if (haveBv && haveNtl) scatterBvNtl("scatter", panel, year, st);
