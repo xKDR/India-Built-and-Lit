@@ -454,6 +454,42 @@ function computeGrowth(panel, metric) {
   return out;
 }
 
+// Round a positive number up to the next "nice" 1/2/5 × 10^k.
+function niceCap(x) {
+  if (x <= 0) return 0;
+  const mag = Math.pow(10, Math.floor(Math.log10(x)));
+  for (const m of [1, 2, 5, 10]) if (m * mag >= x) return m * mag;
+  return 10 * mag;
+}
+
+// Build evenly-spaced tickvals/ticktext for a colorbar, marking the endpoint(s)
+// as e.g. "500%+" / "-500%-" so clipped outliers are explicit.
+function capTicks(min, max) {
+  const step = niceCap((max - min) / 5);
+  const start = Math.ceil(min / step) * step;
+  const vals = [];
+  for (let v = start; v <= max + 1e-9; v += step) vals.push(Number(v.toFixed(6)));
+  if (!vals.length) vals.push(max);
+  if (vals[0] > min) vals.unshift(min);
+  if (vals[vals.length - 1] < max) vals.push(max);
+  const fmt = v => (v >= 0 ? "" : "") + v.toLocaleString(undefined,
+                     { maximumFractionDigits: 0 }) + "%";
+  const text = vals.map(fmt);
+  if (max > 0) text[text.length - 1] = fmt(max) + "+";
+  if (min < 0) text[0] = fmt(min).replace("%", "%") + "−";
+  return { tickvals: vals, ticktext: text };
+}
+
+// Linear-interpolated percentile (p in [0,1]).
+function percentile(arr, p) {
+  const s = arr.filter(v => v != null && !Number.isNaN(v))
+               .sort((a, b) => a - b);
+  if (!s.length) return 0;
+  const i = (s.length - 1) * p;
+  const lo = Math.floor(i), hi = Math.ceil(i);
+  return s[lo] + (s[hi] - s[lo]) * (i - lo);
+}
+
 // growthPeriod: returns "2016 → 2023" if all districts share the same span,
 // otherwise the widest span.
 function growthPeriod(rows) {
@@ -464,7 +500,8 @@ function growthPeriod(rows) {
 }
 
 function choropleth(divId, panel, geo, metric, label, year, cmap, title, focusState, opts = {}) {
-  const { noYearFilter = false, valueFmt = ",.0f", zmid = null } = opts;
+  const { noYearFilter = false, valueFmt = ",.0f", zmid = null,
+          zmin = null, zmax = null, colorbarTicks = null } = opts;
   let sub = noYearFilter
     ? panel.filter(r => r[metric] != null)
     : panel.filter(r => r.year === year && r[metric] != null);
@@ -480,17 +517,20 @@ function choropleth(divId, panel, geo, metric, label, year, cmap, title, focusSt
     text: sub.map(r => `<b>${r.d_name || "—"}</b><br>${stateName(r.pc11_s_id)}`),
     hovertemplate: "%{text}<br>" + label + ": %{z:" + valueFmt + "}<extra></extra>",
     marker: { line: { width: 0.3, color: "rgba(15,23,42,0.35)" } },
-    colorbar: { title: { text: wrap2(label), font: { ...FONT, size: 11 },
-                         side: "top" },
-                tickfont: { ...FONT, size: 10 },
-                thickness: 10, len: 0.74, x: 1.0, xpad: 4,
-                outlinewidth: 0 },
+    colorbar: Object.assign(
+      { title: { text: wrap2(label), font: { ...FONT, size: 11 }, side: "top" },
+        tickfont: { ...FONT, size: 10 },
+        thickness: 10, len: 0.74, x: 1.0, xpad: 4, outlinewidth: 0 },
+      colorbarTicks || {}),
   };
+  if (zmin !== null) trace.zmin = zmin;
+  if (zmax !== null) trace.zmax = zmax;
   if (zmid !== null) {
-    const absMax = Math.max(...sub.map(r => Math.abs(r[metric])));
     trace.zmid = zmid;
-    trace.zmin = -absMax;
-    trace.zmax =  absMax;
+    if (zmin === null && zmax === null) {
+      const absMax = Math.max(...sub.map(r => Math.abs(r[metric])));
+      trace.zmin = -absMax; trace.zmax = absMax;
+    }
   }
   const titleSuffix = focusState ? ` · ${stateName(focusState)}` : "";
   const titleYear = noYearFilter ? "" : ` · ${year}`;
@@ -507,7 +547,8 @@ function choropleth(divId, panel, geo, metric, label, year, cmap, title, focusSt
 }
 
 function topN(divId, panel, metric, label, year, n = 20, focusState, opts = {}) {
-  const { noYearFilter = false, valueFmt = ",.0f" } = opts;
+  const { noYearFilter = false, valueFmt = ",.0f",
+          xMin = null, xMax = null, axisTicks = null } = opts;
   let rows = noYearFilter
     ? panel.filter(r => r[metric] != null)
     : panel.filter(r => r.year === year && r[metric] != null);
@@ -527,6 +568,29 @@ function topN(divId, panel, metric, label, year, n = 20, focusState, opts = {}) 
   const L = baseLayout(`${scopeLabel} — ${label}`);
   L.margin.l = 140;
   L.xaxis.title = { text: label };
+  if (xMin !== null || xMax !== null) {
+    const lo = xMin !== null ? xMin : Math.min(0, ...sub.map(r => r[metric]));
+    const hi = xMax !== null ? xMax : Math.max(0, ...sub.map(r => r[metric]));
+    L.xaxis.range = [lo, hi];
+    if (axisTicks) Object.assign(L.xaxis, axisTicks);
+    // Annotate bars clipped by the cap with their true value (e.g. "1043%").
+    const fmt = v => v.toLocaleString(undefined, { maximumFractionDigits: 0 }) + "%";
+    L.annotations = sub.flatMap(r => {
+      if (r[metric] > hi) return [{
+        x: hi, y: r.d_name || `district ${r.pc11_d_id}`,
+        text: `<b>${fmt(r[metric])}</b>`, showarrow: false,
+        xanchor: "right", xshift: -4,
+        font: { ...FONT, size: 10, color: "#fff" },
+      }];
+      if (r[metric] < lo) return [{
+        x: lo, y: r.d_name || `district ${r.pc11_d_id}`,
+        text: `<b>${fmt(r[metric])}</b>`, showarrow: false,
+        xanchor: "left", xshift: 4,
+        font: { ...FONT, size: 10, color: "#fff" },
+      }];
+      return [];
+    });
+  }
   L.yaxis.automargin = true;
   L.height = 480;
   Plotly.newPlot(divId, [trace], L, PLOT_CFG);
@@ -847,23 +911,39 @@ async function main() {
     if (topTag) topTag.textContent = periodLabel;
 
     if (view === "growth") {
+      // Robust 5–95 percentile range so outliers (e.g. Lakshadweep,
+      // single NE district at >1500%) don't squash the rest of the
+      // distribution. Outliers still appear, just saturated/clipped at the cap.
+      const bvVals  = bvGrowth.map(r => r.growth_pct);
+      const ntlVals = ntlGrowth.map(r => r.growth_pct);
+      const bvLo = Math.min(0, percentile(bvVals, 0.05));
+      const bvHi = niceCap(percentile(bvVals, 0.95));
+      const ntlAbs = niceCap(Math.max(Math.abs(percentile(ntlVals, 0.05)),
+                                      Math.abs(percentile(ntlVals, 0.95))));
+      const bvTicks  = capTicks(bvLo, bvHi);
+      const ntlTicks = capTicks(-ntlAbs, ntlAbs);
       if (haveBv) {
         choropleth("bv-map", bvGrowth, geo, "growth_pct",
                    "Building-volume growth (%)", year, CMAP_VOL,
                    "Built-up volume growth by district", st,
-                   { noYearFilter: true, valueFmt: ",.1f" });
+                   { noYearFilter: true, valueFmt: ",.1f",
+                     zmin: bvLo, zmax: bvHi, colorbarTicks: bvTicks });
         topN("bv-top", bvGrowth, "growth_pct",
              "Building-volume growth (%)", year, 20, st,
-             { noYearFilter: true, valueFmt: ",.1f" });
+             { noYearFilter: true, valueFmt: ",.1f",
+               xMin: bvLo, xMax: bvHi, axisTicks: bvTicks });
       }
       if (haveNtl) {
         choropleth("ntl-map", ntlGrowth, geo, "growth_pct",
                    "NTL growth (%)", year, CMAP_DIVERGE,
                    "Nighttime-lights growth by district", st,
-                   { noYearFilter: true, valueFmt: ",.1f", zmid: 0 });
+                   { noYearFilter: true, valueFmt: ",.1f",
+                     zmid: 0, zmin: -ntlAbs, zmax: ntlAbs,
+                     colorbarTicks: ntlTicks });
         topN("ntl-top", ntlGrowth, "growth_pct",
              "NTL growth (%)", year, 20, st,
-             { noYearFilter: true, valueFmt: ",.1f" });
+             { noYearFilter: true, valueFmt: ",.1f",
+               xMin: -ntlAbs, xMax: ntlAbs, axisTicks: ntlTicks });
       }
     } else {
       if (haveBv) {
