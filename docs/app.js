@@ -899,6 +899,13 @@ async function main() {
   const bvGrowth  = haveBv  ? computeGrowth(panel, "volume_m3")    : [];
   const ntlGrowth = haveNtl ? computeGrowth(panel, "sum_radiance") : [];
 
+  // Label the growth dropdown with the actual period.
+  const growthOpt = document.querySelector('[data-control="view"] option[value="growth"]');
+  if (growthOpt) {
+    const span = growthPeriod(haveBv ? bvGrowth : ntlGrowth);
+    if (span) growthOpt.textContent = `Growth % (${span.replace("→", "to")})`;
+  }
+
   function render(year) {
     const view = (document.querySelector('[data-control="view"]')?.value) || "levels";
     const st = currentState();
@@ -931,7 +938,7 @@ async function main() {
         topN("bv-top", bvGrowth, "growth_pct",
              "Building-volume growth (%)", year, 20, st,
              { noYearFilter: true, valueFmt: ",.1f",
-               xMin: bvLo, xMax: bvHi, axisTicks: bvTicks });
+               xMin: 0, xMax: bvHi, axisTicks: capTicks(0, bvHi) });
       }
       if (haveNtl) {
         choropleth("ntl-map", ntlGrowth, geo, "growth_pct",
@@ -943,7 +950,7 @@ async function main() {
         topN("ntl-top", ntlGrowth, "growth_pct",
              "NTL growth (%)", year, 20, st,
              { noYearFilter: true, valueFmt: ",.1f",
-               xMin: -ntlAbs, xMax: ntlAbs, axisTicks: ntlTicks });
+               xMin: 0, xMax: ntlAbs, axisTicks: capTicks(0, ntlAbs) });
       }
     } else {
       if (haveBv) {
