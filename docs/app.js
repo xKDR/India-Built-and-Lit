@@ -34,6 +34,11 @@ const CMAP_NTL = [
   [0.0, "#fffaec"], [0.25, "#ffd58a"], [0.5,  "#ff9846"],
   [0.75, "#d34a17"], [1.0, "#1a0d09"],
 ];
+// Diverging scale for growth (handles negatives, white at 0).
+const CMAP_DIVERGE = [
+  [0.0, "#3b5c8f"], [0.25, "#9bb5d6"], [0.5, "#f5f0ea"],
+  [0.75, "#f5a48f"], [1.0, "#7a2417"],
+];
 
 function baseLayout(title) {
   return {
@@ -421,8 +426,48 @@ function wrap2(s) {
   return i < 0 ? s : s.slice(0, i) + "<br>" + s.slice(i + 1);
 }
 
-function choropleth(divId, panel, geo, metric, label, year, cmap, title, focusState) {
-  let sub = panel.filter(r => r.year === year && r[metric] != null);
+// Compute % growth from earliest to latest year per district for a metric.
+// Returns rows: {pc11_d_id, pc11_s_id, d_name, growth_pct, first_year, last_year}
+function computeGrowth(panel, metric) {
+  const byD = new Map();
+  for (const r of panel) {
+    if (r[metric] == null || !r.pc11_d_id) continue;
+    let e = byD.get(r.pc11_d_id);
+    if (!e) {
+      e = { pc11_d_id: r.pc11_d_id, pc11_s_id: r.pc11_s_id, d_name: r.d_name,
+            first: { year: r.year, val: r[metric] },
+            last:  { year: r.year, val: r[metric] } };
+      byD.set(r.pc11_d_id, e);
+    }
+    if (r.year < e.first.year) e.first = { year: r.year, val: r[metric] };
+    if (r.year > e.last.year)  e.last  = { year: r.year, val: r[metric] };
+  }
+  const out = [];
+  for (const e of byD.values()) {
+    if (e.first.year === e.last.year || !e.first.val) continue;
+    out.push({
+      pc11_d_id: e.pc11_d_id, pc11_s_id: e.pc11_s_id, d_name: e.d_name,
+      growth_pct: (e.last.val - e.first.val) / Math.abs(e.first.val) * 100,
+      first_year: e.first.year, last_year: e.last.year,
+    });
+  }
+  return out;
+}
+
+// growthPeriod: returns "2016 → 2023" if all districts share the same span,
+// otherwise the widest span.
+function growthPeriod(rows) {
+  if (!rows.length) return "";
+  const fy = Math.min(...rows.map(r => r.first_year));
+  const ly = Math.max(...rows.map(r => r.last_year));
+  return `${fy} → ${ly}`;
+}
+
+function choropleth(divId, panel, geo, metric, label, year, cmap, title, focusState, opts = {}) {
+  const { noYearFilter = false, valueFmt = ",.0f", zmid = null } = opts;
+  let sub = noYearFilter
+    ? panel.filter(r => r[metric] != null)
+    : panel.filter(r => r.year === year && r[metric] != null);
   if (focusState) sub = sub.filter(r => String(r.pc11_s_id) === String(focusState));
   const view = mapView(focusState);
   const trace = {
@@ -433,7 +478,7 @@ function choropleth(divId, panel, geo, metric, label, year, cmap, title, focusSt
     featureidkey: "properties.pc11_d_id",
     colorscale: cmap,
     text: sub.map(r => `<b>${r.d_name || "—"}</b><br>${stateName(r.pc11_s_id)}`),
-    hovertemplate: "%{text}<br>" + label + ": %{z:,.0f}<extra></extra>",
+    hovertemplate: "%{text}<br>" + label + ": %{z:" + valueFmt + "}<extra></extra>",
     marker: { line: { width: 0.3, color: "rgba(15,23,42,0.35)" } },
     colorbar: { title: { text: wrap2(label), font: { ...FONT, size: 11 },
                          side: "top" },
@@ -441,11 +486,18 @@ function choropleth(divId, panel, geo, metric, label, year, cmap, title, focusSt
                 thickness: 10, len: 0.74, x: 1.0, xpad: 4,
                 outlinewidth: 0 },
   };
+  if (zmid !== null) {
+    const absMax = Math.max(...sub.map(r => Math.abs(r[metric])));
+    trace.zmid = zmid;
+    trace.zmin = -absMax;
+    trace.zmax =  absMax;
+  }
   const titleSuffix = focusState ? ` · ${stateName(focusState)}` : "";
+  const titleYear = noYearFilter ? "" : ` · ${year}`;
   Plotly.newPlot(divId, [trace], {
     mapbox: { style: "carto-positron", center: view.center, zoom: view.zoom },
     margin: { l: 0, r: 0, t: 44, b: 0 },
-    title: { text: `${title}${titleSuffix} · ${year}`,
+    title: { text: `${title}${titleSuffix}${titleYear}`,
              font: { ...FONT, size: 15, color: COLOR_DARK },
              x: 0, xref: "paper", xanchor: "left", yanchor: "top" },
     paper_bgcolor: BG,
@@ -454,8 +506,11 @@ function choropleth(divId, panel, geo, metric, label, year, cmap, title, focusSt
   }, PLOT_CFG);
 }
 
-function topN(divId, panel, metric, label, year, n = 20, focusState) {
-  let rows = panel.filter(r => r.year === year && r[metric] != null);
+function topN(divId, panel, metric, label, year, n = 20, focusState, opts = {}) {
+  const { noYearFilter = false, valueFmt = ",.0f" } = opts;
+  let rows = noYearFilter
+    ? panel.filter(r => r[metric] != null)
+    : panel.filter(r => r.year === year && r[metric] != null);
   if (focusState) rows = rows.filter(r => String(r.pc11_s_id) === String(focusState));
   const sub = rows.sort((a, b) => b[metric] - a[metric]).slice(0, n).reverse();
   const trace = {
@@ -464,8 +519,8 @@ function topN(divId, panel, metric, label, year, n = 20, focusState) {
     x: sub.map(r => r[metric]),
     y: sub.map(r => r.d_name || `district ${r.pc11_d_id}`),
     text: sub.map(r => stateName(r.pc11_s_id)),
-    hovertemplate: "<b>%{y}</b> · %{text}<br>" + label + ": %{x:,.0f}<extra></extra>",
-    marker: { color: COLOR },
+    hovertemplate: "<b>%{y}</b> · %{text}<br>" + label + ": %{x:" + valueFmt + "}<extra></extra>",
+    marker: { color: sub.map(r => r[metric] < 0 ? "#3b5c8f" : COLOR) },
   };
   const scopeLabel = focusState
     ? `${stateName(focusState)} districts` : `Top ${n} districts`;
@@ -776,25 +831,72 @@ async function main() {
     return sel ? Number(sel.value) : initYear;
   };
 
+  // Pre-compute growth panels (full-period % change per district per metric).
+  const bvGrowth  = haveBv  ? computeGrowth(panel, "volume_m3")    : [];
+  const ntlGrowth = haveNtl ? computeGrowth(panel, "sum_radiance") : [];
+
   function render(year) {
-    const tag = document.getElementById("year-tag");
-    if (tag) tag.textContent = year;
+    const view = (document.querySelector('[data-control="view"]')?.value) || "levels";
     const st = currentState();
-    if (haveBv) {
-      choropleth("bv-map", panel, geo, "volume_m3",
-                 "Building volume (m³)", year, CMAP_VOL,
-                 "Built-up volume by district", st);
-      topN("bv-top", panel, "volume_m3", "Building volume (m³)", year, 20, st);
-    }
-    if (haveNtl) {
-      choropleth("ntl-map", panel, geo, "sum_radiance",
-                 "NTL sum radiance (nW cm<sup>-2</sup> sr<sup>-1</sup>)", year, CMAP_NTL,
-                 "Nighttime lights by district", st);
-      topN("ntl-top", panel, "sum_radiance", "NTL sum radiance (nW cm<sup>-2</sup> sr<sup>-1</sup>)", year, 20, st);
+    const tag = document.getElementById("year-tag");
+    const topTag = document.getElementById("top-tag");
+    const periodLabel = view === "growth"
+      ? growthPeriod(haveBv ? bvGrowth : ntlGrowth)
+      : String(year);
+    if (tag)    tag.textContent    = periodLabel;
+    if (topTag) topTag.textContent = periodLabel;
+
+    if (view === "growth") {
+      if (haveBv) {
+        choropleth("bv-map", bvGrowth, geo, "growth_pct",
+                   "Building-volume growth (%)", year, CMAP_VOL,
+                   "Built-up volume growth by district", st,
+                   { noYearFilter: true, valueFmt: ",.1f" });
+        topN("bv-top", bvGrowth, "growth_pct",
+             "Building-volume growth (%)", year, 20, st,
+             { noYearFilter: true, valueFmt: ",.1f" });
+      }
+      if (haveNtl) {
+        choropleth("ntl-map", ntlGrowth, geo, "growth_pct",
+                   "NTL growth (%)", year, CMAP_DIVERGE,
+                   "Nighttime-lights growth by district", st,
+                   { noYearFilter: true, valueFmt: ",.1f", zmid: 0 });
+        topN("ntl-top", ntlGrowth, "growth_pct",
+             "NTL growth (%)", year, 20, st,
+             { noYearFilter: true, valueFmt: ",.1f" });
+      }
+    } else {
+      if (haveBv) {
+        choropleth("bv-map", panel, geo, "volume_m3",
+                   "Building volume (m³)", year, CMAP_VOL,
+                   "Built-up volume by district", st);
+        topN("bv-top", panel, "volume_m3", "Building volume (m³)", year, 20, st);
+      }
+      if (haveNtl) {
+        choropleth("ntl-map", panel, geo, "sum_radiance",
+                   "NTL sum radiance (nW cm<sup>-2</sup> sr<sup>-1</sup>)", year, CMAP_NTL,
+                   "Nighttime lights by district", st);
+        topN("ntl-top", panel, "sum_radiance", "NTL sum radiance (nW cm<sup>-2</sup> sr<sup>-1</sup>)", year, 20, st);
+      }
     }
     if (haveBv && haveNtl) scatterBvNtl("scatter", panel, year, st);
   }
-  render(initYear);
+
+  // View toggle: levels vs full-period growth. Hides the year control in growth mode.
+  const viewSel = document.querySelector('[data-control="view"]');
+  if (viewSel) {
+    const applyView = () => {
+      const v = viewSel.value;
+      for (const el of document.querySelectorAll("[data-when-view]")) {
+        el.style.display = el.dataset.whenView === v ? "" : "none";
+      }
+      render(currentYear());
+    };
+    viewSel.addEventListener("change", applyView);
+    applyView();
+  } else {
+    render(initYear);
+  }
 
   // Trend by state: selector picks BV or NTL.
   const trendSel = document.querySelector('[data-control="trend-metric"]');

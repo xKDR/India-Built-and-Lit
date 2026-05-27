@@ -118,7 +118,13 @@
     <section data-needs="bv ntl" hidden>
       <h2>Choropleth <span class="year-tag" id="year-tag"></span></h2>
       <div class="controls">
-        <label>Year <select data-control="year"></select></label>
+        <label>View
+          <select data-control="view">
+            <option value="levels">Levels</option>
+            <option value="growth">Growth % (full period)</option>
+          </select>
+        </label>
+        <label data-when-view="levels">Year <select data-control="year"></select></label>
       </div>
       <div class="row">
         <div id="bv-map"  data-needs="bv"></div>
@@ -127,7 +133,7 @@
     </section>
 
     <section data-needs="bv ntl" hidden>
-      <h2>Top districts</h2>
+      <h2>Top districts <span class="year-tag" id="top-tag"></span></h2>
       <div class="row">
         <div id="bv-top"  data-needs="bv"></div>
         <div id="ntl-top" data-needs="ntl"></div>
